@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예인재 희망도서 신청</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #d1d5db;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px 10px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+            font-size: 1.8rem;
+        }
+
+        /* 탭 스타일 */
+        .tab-menu {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #6b7280;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 소장목록 검색 영역 */
+        .search-section {
+            background: #eff6ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .search-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #1e40af;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .search-results {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: none;
+        }
+
+        .search-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:hover {
+            background-color: #f0f9ff;
+        }
+
+        .search-item .title {
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .search-item .info {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .read365-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        /* 폼 스타일 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .required::after {
+            content: " *";
+            color: #ef4444;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-group label {
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        button.btn-submit, button.btn-excel {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button.btn-submit:hover, button.btn-excel:hover {
+            background: var(--primary-hover);
+        }
+
+        /* 관리자 페이지 테이블 */
+        .admin-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 600px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-weight: bold;
+        }
+
+        /* 반응형 미디어 쿼리 */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px 5px;
+            }
+            .container {
+                padding: 16px;
+            }
+            h1 {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>예인재 희망도서 신청</h1>
+
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="switchTab('user')">도서 신청하기</button>
+        <button class="tab-btn" onclick="switchTab('admin')">신청 내역 관리</button>
+    </div>
+
+    <div id="user-tab" class="tab-content active">
+        <div class="search-section">
+            <h2>🔍 학교도서관 소장목록 검색</h2>
+            <p style="font-size: 0.85rem; color: #4b5563; margin-bottom: 8px;">
+                신청하기 전, 학교도서관에 이미 있는 책인지 확인해보세요.
+            </p>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="책 제목의 일부를 입력하세요..." oninput="searchBooks()">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            <a href="https://read365.edunet.net/PureScreen/SchoolSearch?schoolName=%EC%9D%B8%EC%B2%9C%EC%98%88%EC%86%A1%EC%A4%91%ED%95%99%EA%B5%90&provCode=E10&neisCode=E100002054" 
+               target="_blank" class="read365-link">
+               🔗 인천예송중학교 Read365 도서검색 바로가기
+            </a>
+        </div>
+
+        <form id="applyForm" onsubmit="submitForm(event)">
+            <div class="form-group">
+                <label class="required">구분</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="userType" value="학생" required checked> 학생</label>
+                    <label><input type="radio" name="userType" value="교직원" required> 교직원</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="userName" class="required">신청자명</label>
+                <input type="text" id="userName" placeholder="이름을 입력하세요" required>
+            </div>
+
+            <div class="form-group">
+                <label for="userDept" class="required">소속</label>
+                <input type="text" id="userDept" placeholder="학생: 학년-반 (예: 1-2) / 교직원: 해당부서" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bookTitle" class="required">도서명</label>
+                <input type="text" id="bookTitle" placeholder="신청할 도서의 전체 제목을 입력하세요" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bookAuthor" class="required">저자</label>
+                <input type="text" id="bookAuthor" placeholder="저자명을 입력하세요" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bookPublisher" class="required">출판사</label>
+                <input type="text" id="bookPublisher" placeholder="출판사명을 입력하세요" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bookPrice">가격</label>
+                <input type="number" id="bookPrice" placeholder="숫자만 입력 (예: 15000)">
+            </div>
+
+            <div class="form-group">
+                <label for="applyReason">신청사유</label>
+                <textarea id="applyReason" rows="3" placeholder="도서를 신청하는 이유를 간략히 작성해주세요"></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">신청 완료하기</button>
+        </form>
+    </div>
+
+    <div id="admin-tab" class="tab-content">
+        <div class="admin-controls">
+            <h2>신청 목록 관리</h2>
+            <button class="btn-excel" onclick="exportToExcel()" style="width: auto; padding: 8px 16px;">📊 엑셀로 저장</button>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>일시</th>
+                        <th>구분</th>
+                        <th>신청자</th>
+                        <th>소속</th>
+                        <th>도서명</th>
+                        <th>저자</th>
+                        <th>출판사</th>
+                        <th>가격</th>
+                        <th>신청사유</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 샘플 학교 도서 소장 데이터 (실제 데이터 구축 전 일부 교내 보유 데이터)
+    const libraryBooks = [
+        { title: "해리 포터와 마법사의 돌 1", author: "J.K. 롤링", publisher: "문학수첩" },
+        { title: "해리 포터와 비밀의 방 1", author: "J.K. 롤링", publisher: "문학수첩" },
+        { title: "아몬드", author: "손원평", publisher: "창비" },
+        { title: "불편한 편의점", author: "김호연", publisher: "나무옆의자" },
+        { title: "코스모스", author: "칼 세이건", publisher: "사이언스북스" },
+        { title: "미드나잇 라이브러리", author: "매트 헤이그", publisher: "인플루엔셜" }
+    ];
+
+    // Read365 실시간 연동 제한 관련 주의 사항:
+    // 외부 사이트(Read365)의 CORS(보안 정책) 방지로 인해 프론트엔드 코드 단독으로 실시간 정보를 즉시 가져오는 데 제한이 있을 수 있습니다.
+    // 아래 검색 함수는 입력된 도서명 부분 검색 기능을 즉시 수행할 수 있도록 자체 목록 검색 구조로 구현되어 있습니다.
+
+    function searchBooks() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        const resultsContainer = document.getElementById('searchResults');
+        
+        if (query === '') {
+            resultsContainer.style.display = 'none';
+            resultsContainer.innerHTML = '';
+            return;
+        }
+
+        // 도서명의 일부만 포함되어도 검색되도록 필터링
+        const filtered = libraryBooks.filter(book => book.title.toLowerCase().includes(query));
+
+        if (filtered.length > 0) {
+            resultsContainer.innerHTML = filtered.map(book => `
+                <div class="search-item">
+                    <div class="title">📖 ${book.title}</div>
+                    <div class="info">저자: ${book.author} | 출판사: ${book.publisher}</div>
+                </div>
+            `).join('');
+            resultsContainer.style.display = 'block';
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="search-item" style="color: #059669;">
+                    ✅ 소장 목록에 없는 도서입니다. 아래 양식에서 바로 신청하실 수 있습니다.
+                </div>
+            `;
+            resultsContainer.style.display = 'block';
+        }
+    }
+
+    // 신청 데이터 저장 및 불러오기 (Localstorage)
+    let applications = JSON.parse(localStorage.getItem('yeinjjae_requests')) || [];
+
+    function submitForm(e) {
+        e.preventDefault();
+
+        const newRequest = {
+            date: new Date().toLocaleDateString('ko-KR'),
+            userType: document.querySelector('input[name="userType"]:checked').value,
+            userName: document.getElementById('userName').value,
+            userDept: document.getElementById('userDept').value,
+            bookTitle: document.getElementById('bookTitle').value,
+            bookAuthor: document.getElementById('bookAuthor').value,
+            bookPublisher: document.getElementById('bookPublisher').value,
+            bookPrice: document.getElementById('bookPrice').value || '-',
+            applyReason: document.getElementById('applyReason').value || '-'
+        };
+
+        applications.push(newRequest);
+        localStorage.setItem('yeinjjae_requests', JSON.stringify(applications));
+
+        alert('희망도서 신청이 성공적으로 완료되었습니다!');
+        document.getElementById('applyForm').reset();
+        renderAdminTable();
+    }
+
+    // 관리자 페이지 데이터 렌더링
+    function renderAdminTable() {
+        const tbody = document.getElementById('adminTableBody');
+        if (applications.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">신청 내역이 없습니다.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = applications.map(item => `
+            <tr>
+                <td>${item.date}</td>
+                <td>${item.userType}</td>
+                <td>${item.userName}</td>
+                <td>${item.userDept}</td>
+                <td><b>${item.bookTitle}</b></td>
+                <td>${item.bookAuthor}</td>
+                <td>${item.bookPublisher}</td>
+                <td>${item.bookPrice}</td>
+                <td>${item.applyReason}</td>
+            </tr>
+        `).join('');
+    }
+
+    // 엑셀 저장 기능 (SheetJS 활용)
+    function exportToExcel() {
+        if (applications.length === 0) {
+            alert('다운로드할 신청 내역이 없습니다.');
+            return;
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(applications);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "희망도서신청목록");
+
+        // 헤더 이름 변경 설정
+        XLSX.utils.sheet_add_aoa(worksheet, [["신청일자", "구분", "신청자명", "소속", "도서명", "저자", "출판사", "가격", "신청사유"]], { origin: "A1" });
+
+        XLSX.writeFile(workbook, "예인재_희망도서_신청목록.xlsx");
+    }
+
+    // 탭 전환 함수
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        if (tabName === 'user') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('user-tab').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('admin-tab').classList.add('active');
+            renderAdminTable();
+        }
+    }
+
+    // 초기 실행
+    renderAdminTable();
+</script>
+
+</body>
+</html>
